@@ -1,16 +1,10 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>FLASKING THINGS</title>
-</head>
-<body>
+{%extends 'base.html'%}
+
+{%block content%}
+
+
 <h1>What's Up Homie {{first_name}}</h1>
 <p>This is second try !!!</p>
-<p>{{stuff|striptags}}</p>
-<h3>Favourite Pizza</h3>
-{% for topping in favourite_pizza %}
-    {{topping}}
-{% endfor %}
-</body>
-</html>
+
+
+{%endblock%}
