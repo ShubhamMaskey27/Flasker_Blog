@@ -121,27 +121,37 @@ def dashboard():
         name_to_update.favorite_color = request.form['favorite_color']
         name_to_update.username = request.form['username']
         name_to_update.about_author = request.form['about_author']
-        name_to_update.profile_pic = request.files['profile_pic']
-        # changing actual images to some random string
-        # Grab image name
-        pic_filename = secure_filename(name_to_update.profile_pic.filename)
-        # Set UUID
-        pic_name = str(uuid.uuid1()) + "_" + pic_filename
-        # Save that image
-        saver = request.files['profile_pic']
-        # Change it to a string to save to db
-        name_to_update.profile_pic = pic_name
-        try:
+
+
+        # check for profile pic
+        if request.files['profile_pic']:
+            name_to_update.profile_pic = request.files['profile_pic']
+            # changing actual images to some random string
+            # Grab image name
+            pic_filename = secure_filename(name_to_update.profile_pic.filename)
+            # Set UUID
+            pic_name = str(uuid.uuid1()) + "_" + pic_filename
+            # Save that image
+            saver = request.files['profile_pic']
+            # Change it to a string to save to db
+            name_to_update.profile_pic = pic_name
+            try:
+                db.session.commit()
+                saver.save(os.path.join(app.config['UPLOAD_FOLDER'], pic_name))
+                flash("User updated successfully")
+                return render_template("dashboard.html",
+                                       form=form, name_to_update=name_to_update)
+            except:
+                flash("Looks like you messed Up")
+                return render_template("dashboard.html",
+                                       form=form, name_to_update=name_to_update)
+        else:
             db.session.commit()
-            saver.save(os.path.join(app.config['UPLOAD_FOLDER']), pic_name)
-            flash("User updated successfully")
+            flash("User updated successfully ")
             return render_template("dashboard.html",
-                                   form=form, name_to_update=name_to_update, id=id)
-        except:
-            flash("Looks like you messed Up")
-            return render_template("dashboard.html",
-                                   form=form, name_to_update=name_to_update, id=id)
-    return render_template("dashboard.html", form=form, name_to_update=name_to_update, id=id)
+                                   form=form, name_to_update=name_to_update)
+    else:
+        return render_template("dashboard.html", form=form, name_to_update=name_to_update)
 
 
 @app.route('/post/delete/<int:id>')
@@ -150,7 +160,7 @@ def delete_post(id):
     post_to_delete = Posts.query.get_or_404(id)
     # Allow only authorised user to delete his post
     id = current_user.id
-    if id == post_to_delete.poster.id:
+    if id == post_to_delete.poster.id or id == 24:
         try:
             db.session.delete(post_to_delete)
             db.session.commit()
@@ -266,6 +276,7 @@ def get_current_date():
 
 
 @app.route('/delete/<int:id>')
+@login_required
 def delete(id):
     user_to_delete = Users.query.get_or_404(id)
     name = None
@@ -291,24 +302,28 @@ def delete(id):
 @app.route('/update/<int:id>', methods=['GET', 'POST'])
 @login_required
 def update(id):
-    form = UserForm()
-    name_to_update = Users.query.get_or_404(id)
-    if request.method == "POST":
-        # Passing information filled in the form to these variable
-        name_to_update.name = request.form['name']
-        name_to_update.email = request.form['email']
-        name_to_update.favorite_color = request.form['favorite_color']
-        name_to_update.username = request.form['username']
-        try:
-            db.session.commit()
-            flash("User updated successfully")
-            return render_template("update.html",
-                                   form=form, name_to_update=name_to_update, id=id)
-        except:
-            flash("Looks like you messed Up")
-            return render_template("update.html",
-                                   form=form, name_to_update=name_to_update, id=id)
-    return render_template("update.html", form=form, name_to_update=name_to_update, id=id)
+    if id == current_user.id:
+        form = UserForm()
+        name_to_update = Users.query.get_or_404(id)
+        if request.method == "POST":
+            # Passing information filled in the form to these variable
+            name_to_update.name = request.form['name']
+            name_to_update.email = request.form['email']
+            name_to_update.favorite_color = request.form['favorite_color']
+            name_to_update.username = request.form['username']
+            try:
+                db.session.commit()
+                flash("User updated successfully")
+                return render_template("update.html",
+                                       form=form, name_to_update=name_to_update, id=id)
+            except:
+                flash("Looks like you messed Up")
+                return render_template("update.html",
+                                       form=form, name_to_update=name_to_update, id=id)
+        return render_template("update.html", form=form, name_to_update=name_to_update, id=id)
+    else:
+        flash("Sorry you can't delete ,Looks like you messed Up")
+        return redirect(url_for('dashboard'))
 
 
 @app.route('/user/add', methods=['GET', 'POST'])
